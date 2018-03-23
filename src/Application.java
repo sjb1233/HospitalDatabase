@@ -106,7 +106,7 @@ public class Application {
             return;
         }
 
-        String patientName = "'" + getUserInput("Full name of patient being admitted", "(\\w)+\\s(\\w)+") + "'";
+        String patientName = "'" + getUserInput("Full name of patient being admitted (First Last)", "(\\w)+\\s(\\w)+") + "'";
 
         String patientQuery = "SELECT pid,name,dateOfBirth,contactnumber FROM patient WHERE name = " + patientName;
 
@@ -120,7 +120,7 @@ public class Application {
         else{
             System.out.println("New Patient - Enter their information");
             String name = "'" + getUserInput("Enter full name of patient","(\\w){1,20}\\s(\\w){1,20}") + "'";
-            String sex = "'" + getUserInput("Enter Sex: M/F", "\\w") + "'";
+            String sex = "'" + getUserInput("Enter Sex (M/F)", "\\w") + "'";
             String dateOfBirth = "'" + getUserInput("Enter date of birth (YYYY-MM-DD)", "\\d{4}-\\d{2}-\\d{2}") + "'";
             String history = "'" + getUserInput("Enter patient medical history", "(\\w|\\s){1,5000}") + "'";
             String address = "'" + getUserInput("Enter patient address", "(\\w|\\s){1,200}") + "'";
@@ -209,7 +209,7 @@ public class Application {
             return;
         }
 
-        String update = "Update Room SET numoccupants = numoccupants + 1 WHERE name = " + hospital + " AND roomnumber = " + room;
+        String update = "Update Room SET numoccupants = numoccupants + 1 WHERE name = '" + hospital + "' AND roomnumber = '" + room + "'";
         stmt.executeUpdate(update, Statement.RETURN_GENERATED_KEYS);
         rs = stmt.getGeneratedKeys();
         if(!rs.next()) {
@@ -217,7 +217,7 @@ public class Application {
             return;
         }
 
-
+        System.out.println("Success");
         rs.close();
         stmt.close();
     }
@@ -255,8 +255,8 @@ public class Application {
             String latestRecord;
 
             String record = "WITH latestRecord AS (SELECT MAX(reportDate) FROM Record WHERE pid = " + id + ")" +
-                    "SELECT Record.pid,latestRecord.max,Record.description FROM Record,latestRecord WHERE Record.reportDate = latestRecord.max" +
-                    "AND Record.pid = " + id;
+                    "SELECT Record.rid,Record.pid,latestRecord.max,Record.description FROM Record,latestRecord WHERE Record.reportDate = latestRecord.max" +
+                    " AND Record.pid = " + id + " ORDER BY Record.rid DESC";
 
             rs = stmt.executeQuery(record);
             if(rs.next()) {
@@ -272,7 +272,8 @@ public class Application {
             String latestStatus;
 
             String status = "WITH latestStatus AS (SELECT MAX(dateIssued) FROM Attend, AttendedBy WHERE pid = " + id + " AND Attend.attendID = AttendedBy.attendID)" +
-                    "SELECT status,latestStatus.max FROM Attend,AttendedBy,latestStatus WHERE Attend.dateIssued = latestStatus.max AND Attend.attendID = AttendedBy.attendID AND pid = " + id;
+                    " SELECT Attend.attendID,status,latestStatus.max FROM Attend,AttendedBy,latestStatus WHERE Attend.dateIssued = latestStatus.max AND Attend.attendID = AttendedBy.attendID AND pid = " + id
+                    + " ORDER BY Attend.attendID DESC";
 
             rs = stmt.executeQuery(status);
             if(rs.next()) {
@@ -292,7 +293,7 @@ public class Application {
             System.out.println("Latest Status: " + latestStatusDate);
             System.out.println(("Latest Status: " + latestStatus + "\n"));
 
-            String newStatus = "'" + getUserInput("Update status", "(\\w){1,3000}") + "'";
+            String newStatus = "'" + getUserInput("Update status", "(\\w|\\s){1,3000}") + "'";
 
             //  Date = YYYY-MM-DD
             DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
@@ -318,6 +319,10 @@ public class Application {
                 return;
             }
         }
+
+        System.out.println("Success");
+        rs.close();
+        stmt.close();
 
     }
 
@@ -352,8 +357,8 @@ public class Application {
         String latestRecord;
 
         String record = "WITH latestRecord AS (SELECT MAX(reportDate) FROM Record WHERE pid = " + id + ")" +
-                "SELECT Record.pid,latestRecord.max,Record.description FROM Record,latestRecord WHERE Record.reportDate = latestRecord.max" +
-                "AND Record.pid = " + id;
+                " SELECT Record.rid,Record.pid,latestRecord.max,Record.description FROM Record,latestRecord WHERE Record.reportDate = latestRecord.max" +
+                " AND Record.pid = " + id + " ORDER BY Record.rid DESC";
 
         rs = stmt.executeQuery(record);
         if(rs.next()) {
@@ -369,9 +374,9 @@ public class Application {
         String latestDiagnosis;
         String latestTreatment;
 
-        String status = "latestTreatment AS (SELECT MAX(dateIssued) FROM treatedBy, Treatment WHERE pid = " + id + " AND treatedBy.treatmentID = Treatment.treatmentID)" +
-                "SELECT diagnosis,treatmentplan,latestTreatment.max FROM treatment,treatedby,latestTreatment WHERE treatment.dateIssued = latestTreatment.max AND " +
-                "treatment.treatmentid = treatedby.treatmentid AND pid = " + id;
+        String status = "WITH latestTreatment AS (SELECT MAX(dateIssued) FROM treatedBy, Treatment WHERE pid = " + id + " AND treatedBy.treatmentID = Treatment.treatmentID)" +
+                " SELECT treatment.treatmentid,diagnosis,treatmentplan,latestTreatment.max FROM treatment,treatedby,latestTreatment WHERE treatment.dateIssued = latestTreatment.max AND " +
+                "treatment.treatmentid = treatedby.treatmentid AND pid = " + id + " ORDER BY treatment.treatmentid DESC";
 
         rs = stmt.executeQuery(status);
         if(rs.next()) {
@@ -394,8 +399,8 @@ public class Application {
         System.out.println(("Latest Diagnosis: " + latestDiagnosis  + "\n"));
         System.out.println(("Latest Treatment: " + latestTreatment + "\n"));
 
-        String newDiagnosis = "'" + getUserInput("Update diagnosis", "(\\w){1,3000}") + "'";
-        String newTreatment = "'" + getUserInput("Update treatment plan", "(\\w){1,3000}") + "'";
+        String newDiagnosis = "'" + getUserInput("Update diagnosis", "(\\w|\\s){1,3000}") + "'";
+        String newTreatment = "'" + getUserInput("Update treatment plan", "(\\w|\\s){1,3000}") + "'";
 
         //  Date = YYYY-MM-DD
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
@@ -420,6 +425,11 @@ public class Application {
             System.out.println("Something went wrong");
             return;
         }
+
+        System.out.println("Success");
+        rs.close();
+        stmt.close();
+
     }
 
     private static void chargePatient(Connection conn) throws SQLException{
@@ -437,7 +447,7 @@ public class Application {
             return;
         }
 
-        String patientName = "'" + getUserInput("Full name of patient being admitted", "(\\w)+\\s(\\w)+") + "'";
+        String patientName = "'" + getUserInput("Full name of patient being admitted (First Last)", "(\\w)+\\s(\\w)+") + "'";
 
         String patientQuery = "SELECT pid,name,dateOfBirth,contactnumber FROM patient WHERE name = " + patientName;
 
@@ -450,8 +460,8 @@ public class Application {
             return;
         }
 
-        String hospital = "'" + getUserInput("Enter hospital (Mount Royal General Hospital|Montreal General Hospital|Sherbrooke Medical Facility",
-                "(Mount Royal General Hospital|Montreal General Hospital|Sherbrooke Medical Facility") + "'";
+        String hospital = "'" + getUserInput("Enter hospital (Mount Royal General Hospital|Montreal General Hospital|Sherbrooke Medical Facility)",
+                "(Mount Royal General Hospital|Montreal General Hospital|Sherbrooke Medical Facility)") + "'";
 
         String insuranceCompany = "'" + getUserInput("Enter name of insurance company (Zoombeat|Quatz|Trudoo|Lajo)",
                 "(Zoombeat|Quatz|Trudoo|Lajo)") + " Insurance Company'" ;
@@ -468,7 +478,7 @@ public class Application {
         }
 
         String amount = getUserInput("Enter amount owed", "(\\d)+");
-        String desc = "'" + getUserInput("Description", "(\\w){1,3000}") + "'";
+        String desc = "'" + getUserInput("Description", "(\\w|\\s){1,3000}") + "'";
 
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         Date date = new Date();
@@ -487,13 +497,18 @@ public class Application {
             return;
         }
 
-        String pays = "INSERT INTO Pays VALUES (" + hospital +"," + pid + "," + iid + "," + paymentid;
+        String pays = "INSERT INTO Pays VALUES (" + hospital +"," + pid + "," + iid + "," + paymentid + ")";
         stmt.executeUpdate(pays, Statement.RETURN_GENERATED_KEYS);
         rs = stmt.getGeneratedKeys();
         if(!rs.next()) {
             System.out.println("Something went wrong");
             return;
         }
+
+        System.out.println("Success");
+        rs.close();
+        stmt.close();
+
     }
 
     private static void releasePatient(Connection conn) throws SQLException{
@@ -511,7 +526,7 @@ public class Application {
             return;
         }
 
-        String patientName = "'" + getUserInput("Full name of patient being admitted", "(\\w)+\\s(\\w)+") + "'";
+        String patientName = "'" + getUserInput("Full name of patient being released (First Last)", "(\\w)+\\s(\\w)+") + "'";
 
         String patientQuery = "SELECT pid,name,dateOfBirth,contactnumber FROM patient WHERE name = " + patientName;
 
@@ -524,7 +539,7 @@ public class Application {
             return;
         }
 
-        String admitted = "SELECT * FROM Patient,Occupies,Occupy WHERE releasedDate IS NULL " +
+        String admitted = "SELECT Occupy.occupyID,Occupies.name,Occupies.roomnumber FROM Patient,Occupies,Occupy WHERE releasedDate IS NULL " +
                 "AND admissionDate IS NOT NULL AND " +
                 "Occupies.occupyID = Occupy.occupyID AND Patient.pid = Occupies.pid AND Patient.pid = " + pid;
         rs = stmt.executeQuery(admitted);
@@ -532,9 +547,9 @@ public class Application {
         String hospital;
         String roomnumber;
         if(rs.next()) {
-            hospital = "'" + rs.getString("Occupies.name") + "'";
-            occupyid = rs.getInt("Occupy.occupyID");
-            roomnumber = "'" + rs.getString("Occupies.roomnumber") + "'";
+            hospital = "'" + rs.getString("name") + "'";
+            occupyid = rs.getInt("occupyID");
+            roomnumber = "'" + rs.getString("roomnumber") + "'";
         }
         else{
             System.out.println("Patient with pid = " + pid + " is not currently admitted to the hospital");
@@ -576,6 +591,11 @@ public class Application {
             System.out.println("Couldn't update Room table");
             return;
         }
+
+        System.out.println("Success");
+        rs.close();
+        stmt.close();
+
     }
 
 }
